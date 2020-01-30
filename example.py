@@ -1,11 +1,14 @@
 import json
+import numpy as np
+
 from pm4py.objects.log.importer.xes import factory as xes_import_factory
 from pm4py.objects.petri.exporter import pnml as pnml_exporter
 from pm4py.objects.petri.importer import pnml as pnml_importer
 from pm4py.algo.discovery.heuristics import factory as heuristics_miner
 
-from dream.LogWrapper import LogWrapper
-from dream.EnhancedPN import EnhancedPN
+from pydream.LogWrapper import LogWrapper
+from pydream.EnhancedPN import EnhancedPN
+from pydream.predictive.nap.NAP import NAP
 
 if __name__== "__main__":
     log = xes_import_factory.apply('YOUR_EVENTLOG.xes')
@@ -25,3 +28,15 @@ if __name__== "__main__":
 
     with open("timedstatesamples.json", 'w') as fp:
         json.dump(timedstatesamples, fp)
+
+    algo = NAP(tss_train_file="timedstatesamples.json", tss_test_file="timedstatesamples.json", options={"n_epochs" : 100})
+    algo.train(checkpoint_path="model-path", name="MODEL-NAME", save_results=True)
+
+    algo = NAP()
+    algo.loadModel(path="model-path", name="MODEL-NAME")
+
+    test_sample = np.array([
+        [0.0, 0.0, 0.0, 10.0, 9.999999741502075, 10.0, 9.999999741502075, # Decay Vector
+         0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, # Token Count
+         0, 0, 0, 0, 0, 0, 1]]) # Marking
+    print(algo.predict(test_sample))
