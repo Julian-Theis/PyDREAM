@@ -81,7 +81,7 @@ A trained model can be loaded, but the training file must always be provided, ot
 # Requirements
 PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr require tensorflow and keras. The full list of requirements can be found in [requirements.txt](requirements.txt).
 
-## Citation
+# Citation
 ```
 @article{theis2019decay,
   title={Decay Replay Mining to Predict Next Process Events},
@@ -94,7 +94,7 @@ PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr r
 }
 ```
 
-## Remarks
+# Remarks
 This code is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the corresponding license for more details.
 
 [![HitCount](http://hits.dwyl.io/Julian-Theis/PyDREAM.svg)](http://hits.dwyl.io/Julian-Theis/PyDREAM)
