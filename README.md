@@ -1,5 +1,5 @@
 # PyDREAM
-PyDREAM is a Python implementation of the Decay Replay Mining (DREAM) approach and the corresponding predictive algorithms (NAP and NAPr) described in the paper [Decay Replay Mining to Predict Next Process Events](https://ieeexplore.ieee.org/document/8811455) and is based on [PM4Py](http://pm4py.org/). The original Java implementation can be found [here](https://github.com/Julian-Theis/DREAM-NAP). There exists also a ProM plugin [here](https://prominentlab.github.io/ProM-DREAM/). 
+PyDREAM is a Python implementation of the Decay Replay Mining (DREAM) approach and the corresponding predictive algorithms (NAP and NAPr) similar to the ones described in the paper [Decay Replay Mining to Predict Next Process Events](https://ieeexplore.ieee.org/document/8811455) and is based on [PM4Py](http://pm4py.org/). The original Java implementation used for benchmarking can be found [here](https://github.com/Julian-Theis/DREAM-NAP). There exists also a ProM plugin [here](https://prominentlab.github.io/ProM-DREAM/). 
 
 # How-To
 Please see [example.py](example.py) for an end-to-end example.
@@ -94,4 +94,9 @@ PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr r
 }
 ```
 
+## Remarks
+This code is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the corresponding license for more details.
+
 [![HitCount](http://hits.dwyl.io/Julian-Theis/PyDREAM.svg)](http://hits.dwyl.io/Julian-Theis/PyDREAM)
+
+
