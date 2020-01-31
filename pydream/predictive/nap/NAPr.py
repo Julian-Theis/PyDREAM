@@ -1,21 +1,25 @@
+import itertools
+import json
+import numpy as np
 from numpy.random import seed
 from tensorflow import set_random_seed
-import numpy as np
-np.seterr(divide='ignore', invalid='ignore')
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
-import json
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers import Dropout, Dense
-from keras.models import Sequential, model_from_json
-import itertools
+from keras.models import model_from_json
+from keras.layers import Input, Dropout, Dense
+from keras.models import Model
+from keras.layers.normalization import BatchNormalization
+
 from pydream.predictive.nap.NAP import multiclass_roc_auc_score
 
+np.seterr(divide='ignore', invalid='ignore')
+
 class NAPr:
-    def __init__(self, tss_train_file=None, tss_test_file=None, options=None):
+    def __init__(self, tss_train_file, tss_test_file=None, options=None):
         """ Options """
         self.opts = {"seed" : 1,
                      "n_epochs" : 100,
@@ -29,10 +33,18 @@ class NAPr:
             for key in options.keys():
                 self.opts[key] = options[key]
 
+        if tss_test_file is None:
+            self.X_train, self.R_train, self.Y_train = self.loadData(tss_train_file)
+            self.stdScaler = MinMaxScaler()
+            self.stdScaler.fit(self.X_train)
+
+            self.stdScaler_res = MinMaxScaler()
+            self.stdScaler_res.fit(self.R_train)
+
         """ Load data and setup """
-        if tss_train_file is not None and tss_test_file is not None:
-            self.X_train, self.Y_train = self.loadData(tss_train_file)
-            self.X_test, self.Y_test = self.loadData(tss_test_file)
+        if tss_test_file is not None:
+            self.X_train, self.R_train, self.Y_train = self.loadData(tss_train_file)
+            self.X_test,self.R_test, self.Y_test = self.loadData(tss_test_file)
 
             self.oneHotEncoderSetup()
             self.Y_train = np.asarray(
@@ -45,24 +57,42 @@ class NAPr:
             self.X_train = self.stdScaler.transform(self.X_train)
             self.X_test = self.stdScaler.transform(self.X_test)
 
+            self.stdScaler_res = MinMaxScaler()
+            self.stdScaler_res.fit(self.R_train)
+            self.R_train = self.stdScaler_res.transform(self.R_train)
+            self.R_test = self.stdScaler_res.transform(self.R_test)
+
+            self.X_train = np.concatenate([self.X_train, self.R_train], axis=1)
+            self.X_test = np.concatenate([self.X_test, self.R_test], axis=1)
+
             self.X_train, self.X_val, self.Y_train, self.Y_val = train_test_split(self.X_train, self.Y_train, test_size=self.opts["eval_size"], random_state=self.opts["seed"],
                                                               shuffle=True)
 
             insize = self.X_train.shape[1]
             outsize = len(self.Y_train[0])
 
-            """ Create Model """
-            self.model = Sequential()
-            self.model.add(Dense(insize, input_dim=insize, activation=self.opts["activation_function"]))
-            self.model.add(Dropout(self.opts["dropout_rate"]))
-            self.model.add(Dense(int(insize * 1.2), activation=self.opts["activation_function"]))
-            self.model.add(Dropout(self.opts["dropout_rate"]))
-            self.model.add(Dense(int(insize * 0.6), activation=self.opts["activation_function"]))
-            self.model.add(Dropout(self.opts["dropout_rate"]))
-            self.model.add(Dense(int(insize * 0.3), activation=self.opts["activation_function"]))
-            self.model.add(Dropout(self.opts["dropout_rate"]))
-            self.model.add(Dense(outsize, activation='softmax'))
-            self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+            class_inputs = Input(shape=(insize,))
+            l0 = Dropout(self.opts["dropout_rate"])(class_inputs)
+            bn0 = BatchNormalization()(l0)
+            ae_x = Dense(300, activation=self.opts["activation_function"])(bn0)
+            bn1 = BatchNormalization()(ae_x)
+            l1 = Dropout(self.opts["dropout_rate"])(bn1)
+            l1 = Dense(200, activation=self.opts["activation_function"], name="classifier_l1")(l1)
+            bn2 = BatchNormalization()(l1)
+            l2 = Dropout(self.opts["dropout_rate"])(bn2)
+            l2 = Dense(100, activation=self.opts["activation_function"], name="classifier_l2")(l2)
+            bn3 = BatchNormalization()(l2)
+            l2 = Dropout(self.opts["dropout_rate"])(bn3)
+            l3 = Dense(50, activation=self.opts["activation_function"], name="classifier_l3")(l2)
+            bn4 = BatchNormalization()(l3)
+            l3 = Dropout(self.opts["dropout_rate"])(bn4)
+            out = Dense(outsize, activation='softmax', name="classifier")(l3)
+
+            self.model = Model([class_inputs], [out])
+            losses = {
+                "classifier": "categorical_crossentropy",
+            }
+            self.model.compile(optimizer='adam', loss=losses, metrics=['accuracy'])
 
     def train(self, checkpoint_path, name, save_results=False):
         event_dict_file = str(checkpoint_path) + "/" + str(name) + "_napr_onehotdict.json"
@@ -100,14 +130,16 @@ class NAPr:
 
     def loadData(self, file):
         x = []
+        r = []
         y = []
         with open(file) as json_file:
             tss = json.load(json_file)
             for sample in tss:
                 if sample["nextEvent"] is not None:
-                    x.append(list(itertools.chain(sample["TimedStateSample"][0], sample["TimedStateSample"][1], sample["TimedStateSample"][2], sample["TimedStateSample"][3])))
+                    x.append(list(itertools.chain(sample["TimedStateSample"][0], sample["TimedStateSample"][1], sample["TimedStateSample"][2])))
+                    r.append(list(sample["TimedStateSample"][3]))
                     y.append(sample["nextEvent"])
-        return np.array(x), np.array(y)
+        return np.array(x), np.array(r), np.array(y)
 
     def setSeed(self):
         seed(self.opts["seed"])
@@ -116,7 +148,7 @@ class NAPr:
     def loadModel(self, path, name):
         with open(path + "/" + name + "_napr_model.json", 'r') as f:
             self.model = model_from_json(f.read())
-        self.model.load_weights(path + "/" + name + "_nap_weights.hdf5")
+        self.model.load_weights(path + "/" + name + "_napr_weights.hdf5")
         with open(path + "/" + name + "_napr_onehotdict.json", 'r') as f:
             self.one_hot_dict = json.load(f)
 

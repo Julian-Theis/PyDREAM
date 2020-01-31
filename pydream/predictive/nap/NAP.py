@@ -21,7 +21,7 @@ def multiclass_roc_auc_score(y_test, y_pred, average="weighted"):
     return roc_auc_score(y_test, y_pred, average=average)
 
 class NAP:
-    def __init__(self, tss_train_file=None, tss_test_file=None, options=None):
+    def __init__(self, tss_train_file, tss_test_file=None, options=None):
         """ Options """
 
         self.opts = {"seed" : 1,
@@ -35,6 +35,12 @@ class NAP:
         if options is not None:
             for key in options.keys():
                 self.opts[key] = options[key]
+
+        if tss_test_file is None:
+            self.X_train, self.Y_train = self.loadData(tss_train_file)
+            self.stdScaler = MinMaxScaler()
+            self.stdScaler.fit(self.X_train)
+
 
         """ Load data and setup """
         if tss_train_file is not None and tss_test_file is not None:

@@ -76,6 +76,8 @@ The corresponding model will be stored automatically based on the provided *chec
 * "eval_size" : float
 * "activation_function" : str
 
+A trained model can be loaded, but the training file must always be provided, otherwise the feature scaler will be initialized incorrectly. 
+
 # Requirements
 PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr require tensorflow and keras. The full list of requirements can be found in [requirements.txt](requirements.txt).
 
