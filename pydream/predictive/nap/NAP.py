@@ -2,9 +2,10 @@ from numpy.random import seed
 from tensorflow import set_random_seed
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
+from sklearn.preprocessing import MinMaxScaler, LabelBinarizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.externals import joblib
 import json
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
@@ -22,7 +23,7 @@ def multiclass_roc_auc_score(y_test, y_pred, average="weighted"):
     return roc_auc_score(y_test, y_pred, average=average)
 
 class NAP:
-    def __init__(self, tss_train_file, tss_test_file=None, options=None):
+    def __init__(self, tss_train_file=None, tss_test_file=None, options=None):
         """ Options """
 
         self.opts = {"seed" : 1,
@@ -36,12 +37,6 @@ class NAP:
         if options is not None:
             for key in options.keys():
                 self.opts[key] = options[key]
-
-        if tss_test_file is None:
-            self.X_train, self.Y_train = self.loadData(tss_train_file)
-            self.stdScaler = MinMaxScaler()
-            self.stdScaler.fit(self.X_train)
-
 
         """ Load data and setup """
         if tss_train_file is not None and tss_test_file is not None:
@@ -91,7 +86,7 @@ class NAP:
         hist = self.model.fit([self.X_train], [self.Y_train], batch_size=self.opts["n_batch_size"], epochs=self.opts["n_epochs"], shuffle=True,
                          validation_data=([self.X_val], [self.Y_val]),
                          callbacks=[self.EvaluationCallback(self.X_test, self.Y_test), checkpoint])
-
+        joblib.dump(self.stdScaler, str(checkpoint_path) + "/" + str(name) + "_nap_stdScaler.pkl")
         if save_results:
             results_file = str(checkpoint_path) + "/" + str(name) + "_nap_results.json"
             with open(str(results_file), 'w') as outfile:
@@ -113,8 +108,7 @@ class NAP:
             self.one_hot_dict[event] = list(self.onehot_encoder.transform([self.label_encoder.transform([event])])[0])
 
     def loadData(self, file):
-        x = []
-        y = []
+        x, y  = [], []
         with open(file) as json_file:
             tss = json.load(json_file)
             for sample in tss:
@@ -133,6 +127,7 @@ class NAP:
         self.model.load_weights(path + "/" + name + "_nap_weights.hdf5")
         with open(path + "/" + name + "_nap_onehotdict.json", 'r') as f:
             self.one_hot_dict = json.load(f)
+        self.stdScaler = joblib.load(path + "/" + name + "_nap_stdScaler.pkl")
 
     def intToEvent(self, value):
         one_hot = list(np.eye(len(self.one_hot_dict.keys()))[value])

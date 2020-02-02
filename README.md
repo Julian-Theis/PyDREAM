@@ -75,6 +75,7 @@ algo = NAP(tss_train_file="timedstatesamples.json", tss_test_file="timedstatesam
 algo.train(checkpoint_path="model-path", name="MODEL-NAME", save_results=True)
 ```
 
+
 The corresponding model will be stored automatically based on the provided *checkpoint_path* and *name* parameters. The implemented options include:
 * "seed" : int
 * "n_epochs" : str
@@ -83,7 +84,11 @@ The corresponding model will be stored automatically based on the provided *chec
 * "eval_size" : float
 * "activation_function" : str
 
-A trained model can be loaded, but the training file must always be provided, otherwise the feature scalers will be initialized incorrectly. 
+One can load a trained model from file in the following way.
+```python
+algo = NAP()
+algo.loadModel(path="model-path", name="MODEL-NAME")
+```
 
 The following function predicts the next events by returning the raw NAP output and the event names in string format.
 ```python
@@ -95,7 +100,6 @@ nap_out, string_out = algo.predict(tss_loaded_objs)
 
 # Requirements
 PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr require tensorflow and keras. The full list of requirements can be found in [requirements.txt](requirements.txt).
-
 
 # Remarks
 This code is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the corresponding license for more details.
@@ -112,7 +116,3 @@ This code is distributed in the hope that it will be useful, but WITHOUT ANY WAR
   publisher={IEEE}
 }
 ```
-
-[![HitCount](http://hits.dwyl.io/Julian-Theis/PyDREAM.svg)](http://hits.dwyl.io/Julian-Theis/PyDREAM)
-
-

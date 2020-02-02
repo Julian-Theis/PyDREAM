@@ -6,6 +6,7 @@ from tensorflow import set_random_seed
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from keras.callbacks import Callback, ModelCheckpoint
@@ -13,14 +14,13 @@ from keras.models import model_from_json
 from keras.layers import Input, Dropout, Dense
 from keras.models import Model
 from keras.layers.normalization import BatchNormalization
-
 from pydream.predictive.nap.NAP import multiclass_roc_auc_score
 from pydream.util.TimedStateSamples import TimedStateSample
 
 np.seterr(divide='ignore', invalid='ignore')
 
 class NAPr:
-    def __init__(self, tss_train_file, tss_test_file=None, options=None):
+    def __init__(self, tss_train_file=None, tss_test_file=None, options=None):
         """ Options """
         self.opts = {"seed" : 1,
                      "n_epochs" : 100,
@@ -33,14 +33,6 @@ class NAPr:
         if options is not None:
             for key in options.keys():
                 self.opts[key] = options[key]
-
-        if tss_test_file is None:
-            self.X_train, self.R_train, self.Y_train = self.loadData(tss_train_file)
-            self.stdScaler = MinMaxScaler()
-            self.stdScaler.fit(self.X_train)
-
-            self.stdScaler_res = MinMaxScaler()
-            self.stdScaler_res.fit(self.R_train)
 
         """ Load data and setup """
         if tss_test_file is not None:
@@ -108,7 +100,8 @@ class NAPr:
         hist = self.model.fit([self.X_train], [self.Y_train], batch_size=self.opts["n_batch_size"], epochs=self.opts["n_epochs"], shuffle=True,
                          validation_data=([self.X_val], [self.Y_val]),
                          callbacks=[self.EvaluationCallback(self.X_test, self.Y_test), checkpoint])
-
+        joblib.dump(self.stdScaler, str(checkpoint_path) + "/" + str(name) + "_napr_stdScaler.pkl")
+        joblib.dump(self.stdScaler_res, str(checkpoint_path) + "/" + str(name) + "_napr_stdScaler_res.pkl")
         if save_results:
             results_file = str(checkpoint_path) + "/" + str(name) + "_napr_results.json"
             with open(str(results_file), 'w') as outfile:
@@ -130,9 +123,7 @@ class NAPr:
             self.one_hot_dict[event] = list(self.onehot_encoder.transform([self.label_encoder.transform([event])])[0])
 
     def loadData(self, file):
-        x = []
-        r = []
-        y = []
+        x, r, y = [], [], []
         with open(file) as json_file:
             tss = json.load(json_file)
             for sample in tss:
@@ -152,6 +143,8 @@ class NAPr:
         self.model.load_weights(path + "/" + name + "_napr_weights.hdf5")
         with open(path + "/" + name + "_napr_onehotdict.json", 'r') as f:
             self.one_hot_dict = json.load(f)
+        self.stdScaler = joblib.load(path + "/" + name + "_napr_stdScaler.pkl")
+        self.stdScaler_res = joblib.load(path + "/" + name + "_napr_stdScaler_res.pkl")
 
     def intToEvent(self, value):
         one_hot = list(np.eye(len(self.one_hot_dict.keys()))[value])

@@ -32,7 +32,7 @@ if __name__== "__main__":
     algo = NAP(tss_train_file="timedstatesamples.json", tss_test_file="timedstatesamples.json", options={"n_epochs" : 100})
     algo.train(checkpoint_path="model-path", name="MODEL-NAME", save_results=True)
 
-    algo = NAP(tss_train_file="timedstatesamples.json")
+    algo = NAP()
     algo.loadModel(path="model-path", name="MODEL-NAME")
 
     nap_out, string_out = algo.predict(tss_objs)
