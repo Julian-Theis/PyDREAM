@@ -8,6 +8,7 @@ from pydream.util.DecayFunctions import LinearDecay, REGISTER
 from pydream.util.TimedStateSamples import TimedStateSample
 from pydream.util.Functions import time_delta_seconds
 
+
 class EnhancedPN:
     def __init__(self, net, initial_marking, decay_function_file=None):
         """
@@ -53,7 +54,7 @@ class EnhancedPN:
 
         log_wrapper.iterator_reset()
         last_activation = {}
-        while(log_wrapper.iterator_hasNext()):
+        while (log_wrapper.iterator_hasNext()):
             trace = log_wrapper.iterator_next()
 
             for place in self.net.places:
@@ -74,7 +75,9 @@ class EnhancedPN:
                     """ If Transition of interest is not enabled yet, then go through hidden"""
                     if not semantics.is_enabled(toi, self.net, marking):
 
-                        _, _, act_trans, _ = apply_hidden_trans(toi, self.net, copy(marking),places_shortest_path_by_hidden, [], 0, set(),[copy(marking)])
+                        _, _, act_trans, _ = apply_hidden_trans(toi, self.net, copy(marking),
+                                                                places_shortest_path_by_hidden, [], 0, set(),
+                                                                [copy(marking)])
                         for act_tran in act_trans:
                             for arc in act_tran.out_arcs:
                                 activated_places.append(arc.target)
@@ -98,7 +101,8 @@ class EnhancedPN:
                     """ Update Time Recordings """
                     for activated_place in activated_places:
                         if last_activation[str(activated_place)] != -1:
-                            time_delta = time_delta_seconds(last_activation[str(activated_place)], event['time:timestamp'])
+                            time_delta = time_delta_seconds(last_activation[str(activated_place)],
+                                                            event['time:timestamp'])
                             if time_delta > 0:
                                 reactivation_deltas[str(place)].append(time_delta)
                         last_activation[str(activated_place)] = event['time:timestamp']
@@ -106,9 +110,10 @@ class EnhancedPN:
         """ Calculate decay function parameter """
         for place in self.net.places:
             if len(reactivation_deltas[str(place)]) > 1:
-                self.decay_functions[str(place)] = LinearDecay(alpha=1/np.mean(reactivation_deltas[str(place)]), beta=beta)
+                self.decay_functions[str(place)] = LinearDecay(alpha=1 / np.mean(reactivation_deltas[str(place)]),
+                                                               beta=beta)
             else:
-                self.decay_functions[str(place)] = LinearDecay(alpha=1/log_wrapper.max_trace_duration, beta=beta)
+                self.decay_functions[str(place)] = LinearDecay(alpha=1 / log_wrapper.max_trace_duration, beta=beta)
 
         """ Get resource keys to store """
         self.resource_keys = log_wrapper.getResourceKeys()
@@ -118,9 +123,10 @@ class EnhancedPN:
         Decay Replay on given event log.
         :param log_wrapper: Input event log as LogWrapper to be replayed.
         :param resources: Resource keys to count (must have been counted during Petri net enhancement already!), as a list
-        :return: list of timed state samples
+        :return: list of timed state samples as JSON, list of timed state sample objects
         """
         tss = list()
+        tss_objs = list()
 
         decay_values = {}
         token_counts = {}
@@ -184,7 +190,9 @@ class EnhancedPN:
                     toi = self.trans_map[event[self.activity_key]]
                     """ If Transition of interest is not enabled yet, then go through hidden"""
                     if not semantics.is_enabled(toi, self.net, marking):
-                        _, _, act_trans, _ = apply_hidden_trans(toi, self.net, copy(marking), places_shortest_path_by_hidden,[], 0, set(), [copy(marking)])
+                        _, _, act_trans, _ = apply_hidden_trans(toi, self.net, copy(marking),
+                                                                places_shortest_path_by_hidden, [], 0, set(),
+                                                                [copy(marking)])
                         for act_tran in act_trans:
                             for arc in act_tran.out_arcs:
                                 activated_places.append(arc.target)
@@ -217,7 +225,11 @@ class EnhancedPN:
 
                     """ Update Vectors and create TimedStateSamples """
                     if not time_past is None:
-                        decay_values, token_counts = self.updateVectors(decay_values=decay_values, last_activation=last_activation, token_counts=token_counts, activated_places=activated_places, current_time=time_recent)
+                        decay_values, token_counts = self.updateVectors(decay_values=decay_values,
+                                                                        last_activation=last_activation,
+                                                                        token_counts=token_counts,
+                                                                        activated_places=activated_places,
+                                                                        current_time=time_recent)
 
                         next_event_id = self.findNextEventId(event_id, trace)
                         if next_event_id is not None:
@@ -228,7 +240,8 @@ class EnhancedPN:
                         if count_resources:
                             timedstatesample = TimedStateSample(time_delta_seconds(init_time, time_recent),
                                                                 copy(decay_values), copy(token_counts), copy(marking),
-                                                                copy(self.place_list), resource_count=copy(resource_count),
+                                                                copy(self.place_list),
+                                                                resource_count=copy(resource_count),
                                                                 resource_indices=log_wrapper.getResourceKeys())
                         else:
                             timedstatesample = TimedStateSample(time_delta_seconds(init_time, time_recent),
@@ -236,7 +249,8 @@ class EnhancedPN:
                                                                 copy(self.place_list))
                         timedstatesample.setNextEvent(next_event)
                         tss.append(timedstatesample.export())
-        return tss
+                        tss_objs.append(timedstatesample)
+        return tss, tss_objs
 
     def updateVectors(self, decay_values, last_activation, token_counts, activated_places, current_time):
         """ Update Decay Values """
@@ -257,7 +271,7 @@ class EnhancedPN:
         next_event_id = current_id + 1
 
         found = False
-        while(next_event_id < len(trace) and not found):
+        while (next_event_id < len(trace) and not found):
             event = trace[next_event_id]
             if event[self.activity_key] in self.trans_map.keys():
                 found = True
@@ -269,7 +283,6 @@ class EnhancedPN:
         else:
             return next_event_id
 
-    
     def saveToFile(self, file):
         """
         Save the decay functions of the EnhancedPN to file.
@@ -300,13 +313,13 @@ class EnhancedPN:
 
         if not set(decay_data["decayfunctions"].keys()) == set(self.decay_functions.keys()):
             self.decay_functions = {}
-            raise ValueError("Set of decay functions is not equal to set of places of the petri net. Was the decay function file build on the same petri net? Loading from file cancelled.")
+            raise ValueError(
+                "Set of decay functions is not equal to set of places of the petri net. Was the decay function file build on the same petri net? Loading from file cancelled.")
 
         for place in decay_data["decayfunctions"].keys():
-                DecayFunctionClass = REGISTER[decay_data["decayfunctions"][place]['DecayFunction']]
-                df = DecayFunctionClass()
-                df.loadFromDict(decay_data["decayfunctions"][place])
-                self.decay_functions[str(place)] = df
+            DecayFunctionClass = REGISTER[decay_data["decayfunctions"][place]['DecayFunction']]
+            df = DecayFunctionClass()
+            df.loadFromDict(decay_data["decayfunctions"][place])
+            self.decay_functions[str(place)] = df
 
         self.resource_keys = decay_data["resource_keys"]
-

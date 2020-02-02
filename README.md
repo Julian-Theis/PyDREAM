@@ -40,7 +40,8 @@ enhanced_pn.saveToFile("YOURENHANCEDPN.json")
 ```
 
 ## Decay Replay
-Timed State Samples through Decay Replay can be obtained by replaying an event log wrapped into an *LogWrapper* instance on the enhanced Petri net. The resulting Timed State Samples are of JSON format and can be stored for later usage. The Timed State Samples will contain resource counters if a given *LogWrapper* objects encompasses resources.
+Timed State Samples through Decay Replay can be obtained by replaying an event log wrapped into an *LogWrapper* instance on the enhanced Petri net. The function returns two values. 
+First, the resulting Timed State Samples in JSON format that can be saved to file directly. Second, a list of TimedStateSample instances that can be used for further processing. The Timed State Samples will contain resource counters if a given *LogWrapper* objects encompasses resources.
 ```python
 import json
 from pydream.LogWrapper import LogWrapper
@@ -54,12 +55,18 @@ log_wrapper = LogWrapper(log)
 net, initial_marking, _ = pnml_importer.import_net("YOURPETRINET.pnml")
 enhanced_pn = EnhancedPN(net, initial_marking, decay_function_file="YOURENHANCEDPN.json")
 
-timedstatesamples = enhanced_pn.decay_replay(log_wrapper=log_wrapper)
+tss_json, tss_objs = enhanced_pn.decay_replay(log_wrapper=log_wrapper)
 with open("timedstatesamples.json", 'w') as f:
-        json.dump(timedstatesamples, f)
+        json.dump(tss_json, f)
 ```
 
-## Next trAnsition Prediction
+To replay also resources, call *decay_replay()* by listing all resources identifier that should be considered. 
+```python
+log_wrapper = LogWrapper(log, resources=["IDENTIFIER"])
+tss_json, tss_objs = enhanced_pn.decay_replay(log_wrapper=log_wrapper, resources=["IDENTIFIER"])
+```
+
+## Next trAnsition Prediction (NAP)
 A *NAP* or *NAPr* predictor can be trained in the following way.
 ```python
 from pydream.predictive.nap.NAP import NAP
@@ -76,7 +83,15 @@ The corresponding model will be stored automatically based on the provided *chec
 * "eval_size" : float
 * "activation_function" : str
 
-A trained model can be loaded, but the training file must always be provided, otherwise the feature scaler will be initialized incorrectly. 
+A trained model can be loaded, but the training file must always be provided, otherwise the feature scalers will be initialized incorrectly. 
+
+The following function predicts the next events by returning the raw NAP output and the event names in string format.
+```python
+from pydream.util.TimedStateSamples import loadTimedStateSamples
+
+tss_loaded_objs = loadTimedStateSamples("timedstatesamples.json")
+nap_out, string_out = algo.predict(tss_loaded_objs)
+```
 
 # Requirements
 PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr require tensorflow and keras. The full list of requirements can be found in [requirements.txt](requirements.txt).

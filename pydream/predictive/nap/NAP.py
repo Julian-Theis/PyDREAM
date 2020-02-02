@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc
 from keras.callbacks import Callback, ModelCheckpoint
 from keras.layers import Dropout, Dense
 from keras.models import Sequential, model_from_json
+from pydream.util.TimedStateSamples import TimedStateSample
 import itertools
 
 def multiclass_roc_auc_score(y_test, y_pred, average="weighted"):
@@ -140,11 +141,25 @@ class NAP:
                 return k
 
     def predict(self, tss):
-        pred = np.argmax(self.model.predict(tss), axis=1)
+        """
+        Predict from a list TimedStateSamples
+
+        :param tss: list<TimedStateSamples>
+        :return: tuple (DREAM-NAP output, translated next event)
+        """
+        if not isinstance(tss, list) or not isinstance(tss[0], TimedStateSample) :
+            raise ValueError("Input is not a list with TimedStateSample")
+
+        preds = []
         next_events = []
-        for p in pred:
-            next_events.append(self.intToEvent(p))
-        return pred, next_events
+        for sample in tss:
+            features = [list(itertools.chain(sample.export()["TimedStateSample"][0], sample.export()["TimedStateSample"][1], sample.export()["TimedStateSample"][2]))]
+            features = self.stdScaler.transform(features)
+            pred = np.argmax(self.model.predict(features), axis=1)
+            preds.append(pred[0])
+            for p in pred:
+                next_events.append(self.intToEvent(p))
+        return preds, next_events
 
     """ Callback """
     class EvaluationCallback(Callback):

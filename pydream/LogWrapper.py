@@ -79,9 +79,3 @@ class LogWrapper:
             return trace
         else:
             raise ValueError('No more traces in log iterator.')
-
-
-
-
-
-

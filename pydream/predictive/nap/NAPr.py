@@ -15,6 +15,7 @@ from keras.models import Model
 from keras.layers.normalization import BatchNormalization
 
 from pydream.predictive.nap.NAP import multiclass_roc_auc_score
+from pydream.util.TimedStateSamples import TimedStateSample
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -159,11 +160,29 @@ class NAPr:
                 return k
 
     def predict(self, tss):
-        pred = np.argmax(self.model.predict(tss), axis=1)
+        """
+        Predict from a list TimedStateSamples
+
+        :param tss: list<TimedStateSamples>
+        :return: tuple (DREAM-NAP output, translated next event)
+        """
+        if not isinstance(tss, list) or not isinstance(tss[0], TimedStateSample) :
+            raise ValueError("Input is not a list with TimedStateSample")
+
+        preds = []
         next_events = []
-        for p in pred:
-            next_events.append(self.intToEvent(p))
-        return pred, next_events
+        for sample in tss:
+            features = [list(itertools.chain(sample.export()["TimedStateSample"][0], sample.export()["TimedStateSample"][1], sample.export()["TimedStateSample"][2]))]
+            features = self.stdScaler.transform(features)
+            r = [list(sample.export()["TimedStateSample"][3])]
+            r = self.stdScaler_res.transform(r)
+            features= np.concatenate([features, r], axis=1)
+
+            pred = np.argmax(self.model.predict(features), axis=1)
+            preds.append(pred[0])
+            for p in pred:
+                next_events.append(self.intToEvent(p))
+        return preds, next_events
 
     """ Callback """
     class EvaluationCallback(Callback):
