@@ -12,11 +12,20 @@ class TimedStateSample:
             for place in place_list:
                 decay_vector.append(decay_values[str(place)])
                 token_count_vector.append(token_counts[str(place)])
-
+                
+                ##### BUGFIX
+                """
                 if place in marking:
                     marking_vector.append(1)
+                """
+                if str(place) in [str(key) for key in marking.keys()]:
+                    for key, val in marking.items():
+                        if str(key) == str(place):
+                            marking_vector.append(val)
+                            break
                 else:
                     marking_vector.append(0)
+                ##### ------->
 
             if resource_count is None:
                 self.data["TimedStateSample"] = [decay_vector, token_count_vector, marking_vector]
