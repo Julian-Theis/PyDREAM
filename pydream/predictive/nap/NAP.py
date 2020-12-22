@@ -3,8 +3,7 @@ from numpy.random import seed
 
 import json
 import itertools
-
-from tensorflow import set_random_seed
+import tensorflow as tf
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
@@ -13,9 +12,9 @@ from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
-from keras.callbacks import Callback, ModelCheckpoint
-from keras.layers import Dropout, Dense
-from keras.models import Sequential, model_from_json
+from tensorflow.keras.callbacks import Callback, ModelCheckpoint
+from tensorflow.keras.layers import Dropout, Dense
+from tensorflow.keras.models import Sequential, model_from_json
 
 from pydream.util.Functions import multiclass_roc_auc_score
 from pydream.util.TimedStateSamples import TimedStateSample
@@ -93,13 +92,14 @@ class NAP:
 
         ckpt_file = str(checkpoint_path) + "/" + str(name) + "_nap_weights.hdf5"
         checkpoint = ModelCheckpoint(ckpt_file, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-        hist = self.model.fit([self.X_train],
-                              [self.Y_train],
+        hist = self.model.fit((self.X_train),
+                              (self.Y_train),
                               batch_size=self.opts["n_batch_size"],
                               epochs=self.opts["n_epochs"],
                               shuffle=True,
                               validation_data=([self.X_val], [self.Y_val]),
-                              callbacks=[self.EvaluationCallback(self.X_test, self.Y_test), checkpoint])
+                              callbacks=[self.EvaluationCallback(self.X_test, self.Y_test),
+                                         checkpoint])
 
         joblib.dump(self.stdScaler, str(checkpoint_path) + "/" + str(name) + "_nap_stdScaler.pkl")
         if save_results:
@@ -137,7 +137,7 @@ class NAP:
 
     def __setSeed(self):
         seed(self.opts["seed"])
-        set_random_seed(self.opts["seed"])
+        tf.random.set_seed(self.opts["seed"])
 
     def loadModel(self,
                   path: str,
