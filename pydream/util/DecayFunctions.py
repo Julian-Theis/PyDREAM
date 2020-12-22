@@ -1,5 +1,8 @@
 class LinearDecay:
-    def __init__(self, alpha=0, beta=0):
+
+    def __init__(self,
+                 alpha: float = 0,
+                 beta: float = 0):
         self.alpha = alpha
         self.beta = beta
         self.setMeta()
@@ -10,7 +13,7 @@ class LinearDecay:
     def __repr__(self):
         return str(self.meta)
 
-    def loadFromDict(self, dictionary):
+    def loadFromDict(self, dictionary: dict):
         self.alpha = dictionary['alpha']
         self.beta = dictionary['beta']
         self.setMeta()
@@ -21,7 +24,7 @@ class LinearDecay:
         self.meta["alpha"] = self.alpha
         self.meta["beta"] = self.beta
 
-    def decay(self, t):
+    def decay(self, t: float):
         val = self.beta - (t * self.alpha)
         if val > 0:
             return val
@@ -33,5 +36,5 @@ class LinearDecay:
 
 
 REGISTER = {
-    'LinearDecay' : LinearDecay
+    'LinearDecay': LinearDecay
 }

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyDREAM",
-    version="0.0.1",
+    version="0.0.2",
     author="Julian Theis",
     author_email="jul.theis@gmail.com",
     description="Python and PM4Py based implementation of the Decay Replay Mining approach and the Next TrAnsition Prediction algorithms.",

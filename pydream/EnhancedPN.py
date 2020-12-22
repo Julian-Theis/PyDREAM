@@ -1,16 +1,24 @@
 import numpy as np
 import json
+from datetime import datetime
 
 from pm4py.algo.conformance.tokenreplay.versions.token_replay import *
 from pm4py.objects.petri import semantics
+from pm4py.objects.petri.petrinet import PetriNet, Marking
+from pm4py.objects.log.log import Trace
 
 from pydream.util.DecayFunctions import LinearDecay, REGISTER
 from pydream.util.TimedStateSamples import TimedStateSample
 from pydream.util.Functions import time_delta_seconds
+from pydream.LogWrapper import LogWrapper
 
 
 class EnhancedPN:
-    def __init__(self, net, initial_marking, decay_function_file=None):
+
+    def __init__(self,
+                 net: PetriNet,
+                 initial_marking: Marking,
+                 decay_function_file: str = None):
         """
         Creates a new instance of an enhanced petri net
         :param net: petri net loaded from pm4py
@@ -38,11 +46,11 @@ class EnhancedPN:
         for t in self.net.transitions:
             self.trans_map[t.label] = t
 
-    def enhance(self, log_wrapper):
+    def enhance(self, log_wrapper: LogWrapper):
         """
         Enhance a given petri net based on an event log.
         :param log_wrapper: Event log under consideration as LogWrapper
-        :return:
+        :return: None
         """
 
         """ Standard Enhancement """
@@ -54,7 +62,7 @@ class EnhancedPN:
 
         log_wrapper.iterator_reset()
         last_activation = {}
-        while (log_wrapper.iterator_hasNext()):
+        while log_wrapper.iterator_hasNext():
             trace = log_wrapper.iterator_next()
 
             for place in self.net.places:
@@ -83,7 +91,8 @@ class EnhancedPN:
                                 activated_places.append(arc.target)
                             marking = semantics.execute(act_tran, self.net, marking)
 
-                    """ If Transition of interest is STILL not enabled yet, then naively add missing token to fulfill firing rule"""
+                    """ If Transition of interest is STILL not enabled yet, 
+                    then naively add missing token to fulfill firing rule """
                     if not semantics.is_enabled(toi, self.net, marking):
                         for arc in toi.in_arcs:
                             if arc.source not in marking:
@@ -104,6 +113,7 @@ class EnhancedPN:
                             time_delta = time_delta_seconds(last_activation[str(activated_place)],
                                                             event['time:timestamp'])
                             if time_delta > 0:
+                                # noinspection PyUnboundLocalVariable
                                 reactivation_deltas[str(place)].append(time_delta)
                         last_activation[str(activated_place)] = event['time:timestamp']
 
@@ -118,11 +128,14 @@ class EnhancedPN:
         """ Get resource keys to store """
         self.resource_keys = log_wrapper.getResourceKeys()
 
-    def decay_replay(self, log_wrapper, resources=None):
+    def decay_replay(self,
+                     log_wrapper: LogWrapper,
+                     resources: list = None):
         """
         Decay Replay on given event log.
         :param log_wrapper: Input event log as LogWrapper to be replayed.
-        :param resources: Resource keys to count (must have been counted during Petri net enhancement already!), as a list
+        :param resources: Resource keys to count (must have been counted during Petri net
+                          enhancement already!), as a list
         :return: list of timed state samples as JSON, list of timed state sample objects
         """
         tss = list()
@@ -173,7 +186,6 @@ class EnhancedPN:
             """ ----------------------------------> """
 
             """ Replay """
-            time_past = None
             time_recent = None
             init_time = None
             for event_id in range(len(trace)):
@@ -197,18 +209,22 @@ class EnhancedPN:
                             for arc in act_tran.out_arcs:
                                 activated_places.append(arc.target)
                             marking = semantics.execute(act_tran, self.net, marking)
-                    """ If Transition of interest is STILL not enabled yet, then naively add missing token to fulfill firing rule"""
+
+                    """ If Transition of interest is STILL not enabled yet, 
+                    then naively add missing token to fulfill firing rule"""
                     if not semantics.is_enabled(toi, self.net, marking):
                         for arc in toi.in_arcs:
                             if arc.source not in marking:
                                 marking[arc.source] += 1
+
                     """ Fire transition of interest """
                     for arc in toi.out_arcs:
                         activated_places.append(arc.target)
                     marking = semantics.execute(toi, self.net, marking)
+
                     """ Marking is gone - transition could not be fired ..."""
                     if marking is None:
-                        raise ValueError("Invalid Marking - Transition " + toi + " could not be fired.")
+                        raise ValueError("Invalid Marking - Transition '" + str(toi) + "' could not be fired.")
                     """ ----->"""
 
                     """ Update Time Recordings """
@@ -224,14 +240,14 @@ class EnhancedPN:
                                     resource_count[val] += 1
 
                     """ Update Vectors and create TimedStateSamples """
-                    if not time_past is None:
-                        decay_values, token_counts = self.updateVectors(decay_values=decay_values,
-                                                                        last_activation=last_activation,
-                                                                        token_counts=token_counts,
-                                                                        activated_places=activated_places,
-                                                                        current_time=time_recent)
+                    if time_past is not None:
+                        decay_values, token_counts = self.__updateVectors(decay_values=decay_values,
+                                                                          last_activation=last_activation,
+                                                                          token_counts=token_counts,
+                                                                          activated_places=activated_places,
+                                                                          current_time=time_recent)
 
-                        next_event_id = self.findNextEventId(event_id, trace)
+                        next_event_id = self.__findNextEventId(event_id, trace)
                         if next_event_id is not None:
                             next_event = trace[next_event_id][self.activity_key]
                         else:
@@ -252,7 +268,12 @@ class EnhancedPN:
                         tss_objs.append(timedstatesample)
         return tss, tss_objs
 
-    def updateVectors(self, decay_values, last_activation, token_counts, activated_places, current_time):
+    def __updateVectors(self,
+                        decay_values: dict,
+                        last_activation: dict,
+                        token_counts: dict,
+                        activated_places: list,
+                        current_time: datetime):
         """ Update Decay Values """
         for place in self.net.places:
             if last_activation[str(place)] == -1:
@@ -267,23 +288,25 @@ class EnhancedPN:
 
         return decay_values, token_counts
 
-    def findNextEventId(self, current_id, trace):
+    def __findNextEventId(self,
+                          current_id: int,
+                          trace: Trace):
         next_event_id = current_id + 1
 
         found = False
-        while (next_event_id < len(trace) and not found):
+        while next_event_id < len(trace) and not found:
             event = trace[next_event_id]
             if event[self.activity_key] in self.trans_map.keys():
                 found = True
             else:
                 next_event_id += 1
 
-        if found == False:
+        if not found:
             return None
         else:
             return next_event_id
 
-    def saveToFile(self, file):
+    def saveToFile(self, file: str):
         """
         Save the decay functions of the EnhancedPN to file.
         :param file: Output file
@@ -299,7 +322,7 @@ class EnhancedPN:
         with open(file, 'w') as fp:
             json.dump(output, fp)
 
-    def loadFromFile(self, file):
+    def loadFromFile(self, file: str):
         """
         Load decay functions for a given petri net from file.
         :param file: Decay function file
@@ -314,7 +337,9 @@ class EnhancedPN:
         if not set(decay_data["decayfunctions"].keys()) == set(self.decay_functions.keys()):
             self.decay_functions = {}
             raise ValueError(
-                "Set of decay functions is not equal to set of places of the petri net. Was the decay function file build on the same petri net? Loading from file cancelled.")
+                "Set of decay functions is not equal to set of places of the petri net. "
+                "Was the decay function file build on the same petri net?"
+                " Loading from file cancelled.")
 
         for place in decay_data["decayfunctions"].keys():
             DecayFunctionClass = REGISTER[decay_data["decayfunctions"][place]['DecayFunction']]

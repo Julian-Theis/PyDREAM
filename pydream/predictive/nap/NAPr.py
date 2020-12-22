@@ -19,16 +19,20 @@ from pydream.util.TimedStateSamples import TimedStateSample
 
 np.seterr(divide='ignore', invalid='ignore')
 
+
 class NAPr:
-    def __init__(self, tss_train_file=None, tss_test_file=None, options=None):
+    def __init__(self,
+                 tss_train_file: str = None,
+                 tss_test_file: str = None,
+                 options: dict = None):
         """ Options """
-        self.opts = {"seed" : 1,
-                     "n_epochs" : 100,
-                     "n_batch_size" : 64,
-                     "dropout_rate" : 0.2,
-                     "eval_size" : 0.1,
-                     "activation_function" : "relu"}
-        self.setSeed()
+        self.opts = {"seed": 1,
+                     "n_epochs": 100,
+                     "n_batch_size": 64,
+                     "dropout_rate": 0.2,
+                     "eval_size": 0.1,
+                     "activation_function": "relu"}
+        self.__setSeed()
 
         if options is not None:
             for key in options.keys():
@@ -36,10 +40,10 @@ class NAPr:
 
         """ Load data and setup """
         if tss_test_file is not None:
-            self.X_train, self.R_train, self.Y_train = self.loadData(tss_train_file)
-            self.X_test,self.R_test, self.Y_test = self.loadData(tss_test_file)
+            self.X_train, self.R_train, self.Y_train = self.__loadData(tss_train_file)
+            self.X_test, self.R_test, self.Y_test = self.__loadData(tss_test_file)
 
-            self.oneHotEncoderSetup()
+            self.__oneHotEncoderSetup()
             self.Y_train = np.asarray(
                 self.onehot_encoder.transform(self.label_encoder.transform(self.Y_train).reshape(-1, 1)))
             self.Y_test = np.asarray(
@@ -58,8 +62,11 @@ class NAPr:
             self.X_train = np.concatenate([self.X_train, self.R_train], axis=1)
             self.X_test = np.concatenate([self.X_test, self.R_test], axis=1)
 
-            self.X_train, self.X_val, self.Y_train, self.Y_val = train_test_split(self.X_train, self.Y_train, test_size=self.opts["eval_size"], random_state=self.opts["seed"],
-                                                              shuffle=True)
+            self.X_train, self.X_val, self.Y_train, self.Y_val = train_test_split(self.X_train,
+                                                                                  self.Y_train,
+                                                                                  test_size=self.opts["eval_size"],
+                                                                                  random_state=self.opts["seed"],
+                                                                                  shuffle=True)
 
             insize = self.X_train.shape[1]
             outsize = len(self.Y_train[0])
@@ -87,7 +94,10 @@ class NAPr:
             }
             self.model.compile(optimizer='adam', loss=losses, metrics=['accuracy'])
 
-    def train(self, checkpoint_path, name, save_results=False):
+    def train(self, checkpoint_path: str,
+              name: str,
+              save_results: bool = False):
+
         event_dict_file = str(checkpoint_path) + "/" + str(name) + "_napr_onehotdict.json"
         with open(str(event_dict_file), 'w') as outfile:
             json.dump(self.one_hot_dict, outfile)
@@ -97,9 +107,10 @@ class NAPr:
 
         ckpt_file = str(checkpoint_path) + "/" + str(name) + "_napr_weights.hdf5"
         checkpoint = ModelCheckpoint(ckpt_file, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-        hist = self.model.fit([self.X_train], [self.Y_train], batch_size=self.opts["n_batch_size"], epochs=self.opts["n_epochs"], shuffle=True,
-                         validation_data=([self.X_val], [self.Y_val]),
-                         callbacks=[self.EvaluationCallback(self.X_test, self.Y_test), checkpoint])
+        hist = self.model.fit([self.X_train], [self.Y_train], batch_size=self.opts["n_batch_size"],
+                              epochs=self.opts["n_epochs"], shuffle=True,
+                              validation_data=([self.X_val], [self.Y_val]),
+                              callbacks=[self.EvaluationCallback(self.X_test, self.Y_test), checkpoint])
         joblib.dump(self.stdScaler, str(checkpoint_path) + "/" + str(name) + "_napr_stdScaler.pkl")
         joblib.dump(self.stdScaler_res, str(checkpoint_path) + "/" + str(name) + "_napr_stdScaler_res.pkl")
         if save_results:
@@ -107,7 +118,7 @@ class NAPr:
             with open(str(results_file), 'w') as outfile:
                 json.dump(str(hist.history), outfile)
 
-    def oneHotEncoderSetup(self):
+    def __oneHotEncoderSetup(self):
         """ Events to One Hot"""
         events = np.unique(self.Y_train)
 
@@ -122,22 +133,27 @@ class NAPr:
         for event in events:
             self.one_hot_dict[event] = list(self.onehot_encoder.transform([self.label_encoder.transform([event])])[0])
 
-    def loadData(self, file):
+    @staticmethod
+    def __loadData(file: str):
         x, r, y = [], [], []
         with open(file) as json_file:
             tss = json.load(json_file)
             for sample in tss:
                 if sample["nextEvent"] is not None:
-                    x.append(list(itertools.chain(sample["TimedStateSample"][0], sample["TimedStateSample"][1], sample["TimedStateSample"][2])))
+                    x.append(list(itertools.chain(sample["TimedStateSample"][0], sample["TimedStateSample"][1],
+                                                  sample["TimedStateSample"][2])))
                     r.append(list(sample["TimedStateSample"][3]))
                     y.append(sample["nextEvent"])
         return np.array(x), np.array(r), np.array(y)
 
-    def setSeed(self):
+    def __setSeed(self):
         seed(self.opts["seed"])
         set_random_seed(self.opts["seed"])
 
-    def loadModel(self, path, name):
+    def loadModel(self,
+                  path: str,
+                  name: str):
+
         with open(path + "/" + name + "_napr_model.json", 'r') as f:
             self.model = model_from_json(f.read())
         self.model.load_weights(path + "/" + name + "_napr_weights.hdf5")
@@ -146,40 +162,47 @@ class NAPr:
         self.stdScaler = joblib.load(path + "/" + name + "_napr_stdScaler.pkl")
         self.stdScaler_res = joblib.load(path + "/" + name + "_napr_stdScaler_res.pkl")
 
-    def intToEvent(self, value):
+    def __intToEvent(self, value: int):
         one_hot = list(np.eye(len(self.one_hot_dict.keys()))[value])
         for k, v in self.one_hot_dict.items():
             if str(v) == str(one_hot):
                 return k
 
-    def predict(self, tss):
+    def predict(self, tss: list):
         """
         Predict from a list TimedStateSamples
 
         :param tss: list<TimedStateSamples>
         :return: tuple (DREAM-NAP output, translated next event)
         """
-        if not isinstance(tss, list) or not isinstance(tss[0], TimedStateSample) :
+        if not isinstance(tss, list) or not isinstance(tss[0], TimedStateSample):
             raise ValueError("Input is not a list with TimedStateSample")
 
         preds = []
         next_events = []
         for sample in tss:
-            features = [list(itertools.chain(sample.export()["TimedStateSample"][0], sample.export()["TimedStateSample"][1], sample.export()["TimedStateSample"][2]))]
+            features = [list(
+                itertools.chain(sample.export()["TimedStateSample"][0], sample.export()["TimedStateSample"][1],
+                                sample.export()["TimedStateSample"][2]))]
             features = self.stdScaler.transform(features)
             r = [list(sample.export()["TimedStateSample"][3])]
             r = self.stdScaler_res.transform(r)
-            features= np.concatenate([features, r], axis=1)
+            features = np.concatenate([features, r], axis=1)
 
             pred = np.argmax(self.model.predict(features), axis=1)
             preds.append(pred[0])
             for p in pred:
-                next_events.append(self.intToEvent(p))
+                next_events.append(self.__intToEvent(p))
         return preds, next_events
 
     """ Callback """
     class EvaluationCallback(Callback):
-        def __init__(self, X_test, Y_test):
+
+        def __init__(self,
+                     X_test: np.ndarray,
+                     Y_test: np.ndarray):
+
+            super().__init__()
             self.X_test = X_test
             self.Y_test = Y_test
             self.Y_test_int = np.argmax(self.Y_test, axis=1)
@@ -187,11 +210,15 @@ class NAPr:
             self.test_accs = []
             self.losses = []
 
-        def on_train_begin(self, logs={}):
+        def on_train_begin(self,
+                           logs: dict = {}):
             self.test_accs = []
             self.losses = []
 
-        def on_epoch_end(self, epoch, logs={}):
+        def on_epoch_end(self,
+                         epoch: int,
+                         logs: dict = {}):
+
             y_pred = self.model.predict(self.X_test)
             y_pred = y_pred.argmax(axis=1)
 

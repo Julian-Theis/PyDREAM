@@ -1,11 +1,14 @@
-from pm4py.objects.log.log import EventLog
+from pm4py.objects.log.log import Trace, EventLog
 
 from pydream.util.Functions import time_delta_seconds
 
+
 class LogWrapper:
-    def __init__(self, log, resources=None):
+
+    def __init__(self, log: EventLog, resources: list = None):
         """
-        Creates a new instance of a LogWrapper. This class provides extra functionalities to instances of <class \'pm4py.objects.log.log.EventLog\'> for Decay Replay
+        Creates a new instance of a LogWrapper. This class provides extra functionalities to instances of
+        <class \'pm4py.objects.log.log.EventLog\'> for Decay Replay
         :param log: event log of class pm4py.objects.log.log.EventLog to be wrapped
         :param resources: resources to consider, pass as a list of keys
         """
@@ -18,7 +21,6 @@ class LogWrapper:
 
         self.iter_index = -1
         self.iter_remaining = len(self.log) - len(self.ignored_traces)
-
 
         """ SETUP RESOURCE COUNTER """
         if resources is None:
@@ -56,7 +58,7 @@ class LogWrapper:
             raise ValueError('The maximum trace duration of the event log is smaller or equal to 0ms')
         return max_trace_duration
 
-    def isTraceIgnored(self, trace):
+    def isTraceIgnored(self, trace: Trace):
         return trace.attributes['concept:name'] in self.ignored_traces
 
     def iterator_reset(self):
@@ -71,7 +73,7 @@ class LogWrapper:
             self.iter_index += 1
             trace = self.log[self.iter_index]
 
-            while(self.isTraceIgnored(trace)):
+            while self.isTraceIgnored(trace):
                 self.iter_index += 1
                 trace = self.log[self.iter_index]
 
