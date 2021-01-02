@@ -80,4 +80,4 @@ class LogWrapper:
             self.iter_remaining -= 1
             return trace
         else:
-            raise ValueError('No more traces in log iterator.')
+            raise ValueError("No more traces in log iterator.")

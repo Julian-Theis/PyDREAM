@@ -2,7 +2,7 @@ import numpy as np
 import json
 from datetime import datetime
 
-from pm4py.algo.conformance.tokenreplay.versions.token_replay import *
+from pm4py.algo.conformance.tokenreplay.variants.token_replay import *
 from pm4py.objects.petri import semantics
 from pm4py.objects.petri.petrinet import PetriNet, Marking
 from pm4py.objects.log.log import Trace

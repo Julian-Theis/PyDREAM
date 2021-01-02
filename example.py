@@ -1,22 +1,26 @@
 import json
+import numpy as np
+from sklearn.metrics import accuracy_score
 
-from pm4py.objects.log.importer.xes import factory as xes_import_factory
-from pm4py.objects.petri.exporter import pnml as pnml_exporter
-from pm4py.objects.petri.importer import pnml as pnml_importer
-from pm4py.algo.discovery.inductive import factory as inductive_miner
+from pm4py.objects.log.importer.xes import importer as xes_importer
+from pm4py.objects.petri.exporter import exporter as pnml_exporter
+from pm4py.objects.petri.importer import importer as pnml_importer
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 
 from pydream.LogWrapper import LogWrapper
 from pydream.EnhancedPN import EnhancedPN
 from pydream.predictive.nap.NAP import NAP
 from pydream.util.TimedStateSamples import loadTimedStateSamples
 
+
 if __name__ == "__main__":
-    log = xes_import_factory.apply('sample_data\\toy.xes')
+
+    log = xes_importer.apply('sample_data\\toy.xes')
 
     net, im, fm = inductive_miner.apply(log)
-    pnml_exporter.export_net(net, im, "sample_data\\discovered_pn.pnml")
+    pnml_exporter.apply(net, im, "sample_data\\discovered_pn.pnml", fm)
 
-    net, initial_marking, final_marking = pnml_importer.import_net("sample_data\\discovered_pn.pnml")
+    net, initial_marking, final_marking = pnml_importer.apply("sample_data\\discovered_pn.pnml")
 
     log_wrapper = LogWrapper(log)
     enhanced_pn = EnhancedPN(net, initial_marking)
@@ -32,7 +36,6 @@ if __name__ == "__main__":
     algo = NAP(tss_train_file="sample_data\\timedstatesamples.json",
                tss_test_file="sample_data\\timedstatesamples.json",
                options={"n_epochs": 10})
-
     algo.train(checkpoint_path="sample_data\\model",
                name="sample_model",
                save_results=True)
@@ -40,8 +43,4 @@ if __name__ == "__main__":
     algo = NAP()
     algo.loadModel(path="sample_data\\model",
                    name="sample_model")
-
     nap_out, string_out = algo.predict(tss_objs)
-
-    tss_loaded_objs = loadTimedStateSamples("sample_data\\timedstatesamples.json")
-    nap_out_pred, string_out_pred = algo.predict(tss_loaded_objs)
