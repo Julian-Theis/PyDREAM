@@ -1,6 +1,4 @@
 import json
-import numpy as np
-from sklearn.metrics import accuracy_score
 
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.objects.petri.exporter import exporter as pnml_exporter
@@ -10,7 +8,6 @@ from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pydream.LogWrapper import LogWrapper
 from pydream.EnhancedPN import EnhancedPN
 from pydream.predictive.nap.NAP import NAP
-from pydream.util.TimedStateSamples import loadTimedStateSamples
 
 
 if __name__ == "__main__":

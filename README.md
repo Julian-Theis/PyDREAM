@@ -7,20 +7,20 @@ Please see [example.py](example.py) for an end-to-end example.
 ## Prerequisites
 PyDREAM requires an event log and a corresponding PNML Petri net file, both imported through PM4Py.
 ```python
-from pm4py.objects.log.importer.xes import factory as xes_import_factory
-from pm4py.objects.petri.importer import pnml as pnml_importer
+from pm4py.objects.log.importer.xes import importer as xes_importer
+from pm4py.objects.petri.importer import importer as pnml_importer
 
-log = xes_import_factory.apply('YOUR_EVENTLOG.xes')
-net, initial_marking, _ = pnml_importer.import_net("YOURPETRINET.pnml")
+log = xes_importer.apply('YOUR_EVENTLOG.xes')
+net, initial_marking, _ = pnml_importer.apply("YOURPETRINET.pnml")
 ```
 
 ## Event Logs
 The event log must be wrapped into a PyDREAM LogWrapper instance.
 ```python
 from pydream.LogWrapper import LogWrapper
-from pm4py.objects.log.importer.xes import factory as xes_import_factory
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
-log = xes_import_factory.apply('YOUR_EVENTLOG.xes')
+log = xes_importer.apply('YOUR_EVENTLOG.xes')
 log_wrapper = LogWrapper(log)
 ```
 
@@ -46,10 +46,10 @@ First, the resulting Timed State Samples in JSON format that can be saved to fil
 import json
 from pydream.LogWrapper import LogWrapper
 from pydream.EnhancedPN import EnhancedPN
-from pm4py.objects.petri.importer import pnml as pnml_importer
-from pm4py.objects.log.importer.xes import factory as xes_import_factory
+from pm4py.objects.petri.importer import importer as pnml_importer
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
-log = xes_import_factory.apply('YOUR_EVENTLOG.xes')
+log = xes_importer.apply('YOUR_EVENTLOG.xes')
 log_wrapper = LogWrapper(log)
 
 net, initial_marking, _ = pnml_importer.import_net("YOURPETRINET.pnml")
@@ -99,7 +99,7 @@ nap_out, string_out = algo.predict(tss_loaded_objs)
 ```
 
 # Requirements
-PyDREAM is developed for Python 3.6 and is based on PM4Py v1.2.9. NAP and NAPr require tensorflow and keras. The full list of requirements can be found in [requirements.txt](requirements.txt).
+PyDREAM is developed for Python 3.7 and is based on PM4Py v2.1.2. NAP and NAPr require tensorflow 2.4.0. The full list of requirements can be found in [requirements.txt](requirements.txt).
 
 # Remarks
 This code is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the corresponding license for more details.
