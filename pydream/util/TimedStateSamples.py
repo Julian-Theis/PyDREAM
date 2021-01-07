@@ -14,7 +14,8 @@ class TimedStateSample:
                  resource_count: dict = None,
                  resource_indices: dict = None,
                  loadExisting: bool = False):
-        self.data = {"current_time": current_time}
+        self.__data__ = {"ct": current_time}
+        #ct = current time
 
         if not loadExisting:
             decay_vector = []
@@ -34,31 +35,34 @@ class TimedStateSample:
                     marking_vector.append(0)
 
             if resource_count is None:
-                self.data["TimedStateSample"] = [decay_vector, token_count_vector, marking_vector]
+                self.__data__["tss"] = [decay_vector, token_count_vector, marking_vector]
             else:
                 resource_vector = [0 for _ in range(len(resource_indices.keys()))]
                 for key in resource_count.keys():
                     resource_vector[resource_indices[key]] = resource_count[key]
-                self.data["TimedStateSample"] = [decay_vector, token_count_vector, marking_vector, resource_vector]
+                self.__data__["tss"] = [decay_vector, token_count_vector, marking_vector, resource_vector]
         else:
             """ Load from File """
-            self.data = {"current_time": current_time,
-                         "TimedStateSample": [decay_values, token_counts, marking]}
+            self.__data__ = {"ct": current_time,
+                         "tss": [decay_values, token_counts, marking]}
 
     def setResourceVector(self, resource_vector):
-        if len(self.data["TimedStateSample"]) < 4:
-            self.data["TimedStateSample"].append(resource_vector)
+        if len(self.data["tss"]) < 4:
+            self.__data__["tss"].append(resource_vector)
         else:
-            self.data["TimedStateSample"][3] = resource_vector
+            self.__data__["tss"][3] = resource_vector
 
-    def setRecentEvent(self, event):
-        self.data["recentEvent"] = event
+    def setLabel(self, label):
+        self.__data__["label"] = label
 
-    def setNextEvent(self, event):
-        self.data["nextEvent"] = event
+    def setTraceIdentifier(self, trace_id):
+        self.__data__["trace_id"] = trace_id
+
+    def setEventId(self, event_id):
+        self.__data__["event_id"] = event_id
 
     def export(self):
-        return self.data
+        return self.__data__
 
 
 def loadTimedStateSamples(filename: str):
@@ -72,18 +76,18 @@ def loadTimedStateSamples(filename: str):
     with open(filename) as json_file:
         tss = json.load(json_file)
         for sample in tss:
-            ts = TimedStateSample(sample["current_time"],
-                                  sample["TimedStateSample"][0],
-                                  sample["TimedStateSample"][1],
-                                  sample["TimedStateSample"][2],
+            ts = TimedStateSample(sample["ct"],
+                                  sample["tss"][0],
+                                  sample["tss"][1],
+                                  sample["tss"][2],
                                   None, loadExisting=True)
             """ Add resource count if exists """
-            if len(sample["TimedStateSample"]) > 3:
-                ts.setResourceVector(sample["TimedStateSample"][3])
+            if len(sample["tss"]) > 3:
+                ts.setResourceVector(sample["tss"][3])
 
-            """ Add next event if present """
-            if "nextEvent" in sample.keys():
-                ts.setNextEvent(sample["nextEvent"])
+            """ Add label if present """
+            if "label" in sample.keys():
+                ts.setNextEvent(sample["label"])
 
             final.append(ts)
     return final

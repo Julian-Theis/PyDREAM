@@ -41,3 +41,5 @@ if __name__ == "__main__":
     algo.loadModel(path="sample_data\\model",
                    name="sample_model")
     nap_out, string_out = algo.predict(tss_objs)
+
+

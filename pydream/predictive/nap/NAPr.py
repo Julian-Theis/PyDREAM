@@ -145,11 +145,11 @@ class NAPr:
         with open(file) as json_file:
             tss = json.load(json_file)
             for sample in tss:
-                if sample["nextEvent"] is not None:
-                    x.append(list(itertools.chain(sample["TimedStateSample"][0], sample["TimedStateSample"][1],
-                                                  sample["TimedStateSample"][2])))
-                    r.append(list(sample["TimedStateSample"][3]))
-                    y.append(sample["nextEvent"])
+                if sample["label"] is not None:
+                    x.append(list(itertools.chain(sample["tss"][0], sample["tss"][1],
+                                                  sample["tss"][2])))
+                    r.append(list(sample["tss"][3]))
+                    y.append(sample["label"])
         return np.array(x), np.array(r), np.array(y)
 
     def __setSeed(self):
@@ -188,10 +188,10 @@ class NAPr:
         next_events = []
         for sample in tss:
             features = [list(
-                itertools.chain(sample.export()["TimedStateSample"][0], sample.export()["TimedStateSample"][1],
-                                sample.export()["TimedStateSample"][2]))]
+                itertools.chain(sample.export()["tss"][0], sample.export()["tss"][1],
+                                sample.export()["tss"][2]))]
             features = self.stdScaler.transform(features)
-            r = [list(sample.export()["TimedStateSample"][3])]
+            r = [list(sample.export()["tss"][3])]
             r = self.stdScaler_res.transform(r)
             features = np.concatenate([features, r], axis=1)
 

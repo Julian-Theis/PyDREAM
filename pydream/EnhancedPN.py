@@ -263,7 +263,7 @@ class EnhancedPN:
                             timedstatesample = TimedStateSample(time_delta_seconds(init_time, time_recent),
                                                                 copy(decay_values), copy(token_counts), copy(marking),
                                                                 copy(self.place_list))
-                        timedstatesample.setNextEvent(next_event)
+                        timedstatesample.setLabel(next_event)
                         tss.append(timedstatesample.export())
                         tss_objs.append(timedstatesample)
         return tss, tss_objs
