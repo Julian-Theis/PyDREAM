@@ -1,5 +1,6 @@
-import numpy as np
 import json
+import numpy as np
+from tqdm import tqdm
 from datetime import datetime
 
 from pm4py.algo.conformance.tokenreplay.variants.token_replay import *
@@ -62,8 +63,12 @@ class EnhancedPN:
 
         log_wrapper.iterator_reset()
         last_activation = {}
+
+        pbar = tqdm(total=log_wrapper.num_traces, desc="Replay for Process Model Enhancement")
+
         while log_wrapper.iterator_hasNext():
             trace = log_wrapper.iterator_next()
+            pbar.update(1)
 
             for place in self.net.places:
                 if place in self.initial_marking:
@@ -116,6 +121,7 @@ class EnhancedPN:
                                 # noinspection PyUnboundLocalVariable
                                 reactivation_deltas[str(place)].append(time_delta)
                         last_activation[str(activated_place)] = event['time:timestamp']
+        pbar.close()
 
         """ Calculate decay function parameter """
         for place in self.net.places:
@@ -158,8 +164,10 @@ class EnhancedPN:
         """ ---> """
 
         log_wrapper.iterator_reset()
+        pbar = tqdm(total=log_wrapper.num_traces, desc="Decay Replay on Event Log")
         while log_wrapper.iterator_hasNext():
             trace = log_wrapper.iterator_next()
+            pbar.update(1)
 
             resource_count = copy(resource_counter)
             """ Reset all counts for the next trace """
@@ -266,6 +274,7 @@ class EnhancedPN:
                         timedstatesample.setLabel(next_event)
                         tss.append(timedstatesample.export())
                         tss_objs.append(timedstatesample)
+        pbar.close()
         return tss, tss_objs
 
     def __updateVectors(self,

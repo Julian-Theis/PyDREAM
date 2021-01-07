@@ -21,6 +21,7 @@ class LogWrapper:
 
         self.iter_index = -1
         self.iter_remaining = len(self.log) - len(self.ignored_traces)
+        self.num_traces = len(self.log)
 
         """ SETUP RESOURCE COUNTER """
         if resources is None:
