@@ -87,7 +87,15 @@ def loadTimedStateSamples(filename: str):
 
             """ Add label if present """
             if "label" in sample.keys():
-                ts.setNextEvent(sample["label"])
+                ts.setLabel(sample["label"])
+
+            """ Add trace_id if present """
+            if "trace_id" in sample.keys():
+                ts.setTraceIdentifier(sample["trace_id"])
+
+            """ Add event_id if present """
+            if "event_id" in sample.keys():
+                ts.setEventId(sample["event_id"])
 
             final.append(ts)
     return final

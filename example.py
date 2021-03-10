@@ -42,4 +42,3 @@ if __name__ == "__main__":
                    name="sample_model")
     nap_out, string_out = algo.predict(tss_objs)
 
-

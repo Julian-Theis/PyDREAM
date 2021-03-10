@@ -45,7 +45,7 @@ packaging==20.8
 pandas==1.1.5
 parso==0.5.2
 pickleshare==0.7.5
-pm4py==2.1.2
+pm4py==2.1.4
 pm4pycvxopt==0.0.10
 prompt-toolkit==3.0.2
 protobuf==3.11.2
