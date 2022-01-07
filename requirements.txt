@@ -7,7 +7,7 @@ certifi==2020.12.5
 chardet==3.0.4
 ciso8601==2.1.2
 colorama==0.4.3
-cvxopt==1.2.5.post1
+cvxopt==1.2.7
 cycler==0.10.0
 decorator==4.4.1
 deprecation==2.1.0
