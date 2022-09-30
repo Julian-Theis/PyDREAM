@@ -26,7 +26,7 @@ ipython==7.11.1
 ipython-genutils==0.2.0
 jedi==0.15.2
 Jinja2==2.11.3
-joblib==0.14.1
+joblib==1.2.0
 jsonpickle==1.4.2
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.2
